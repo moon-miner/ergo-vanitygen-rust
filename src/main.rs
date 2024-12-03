@@ -16,11 +16,12 @@ fn main() {
     }
     
     println!(
-        "Looking for {} addresses that {} {} with \"{}\"",
+        "Looking for {} addresses matching {} patterns {} {} {}",
         args.num_results,
-        if args.start { "start" } else { "end" },
+        args.patterns.len(),
+        if args.start { "starting with" } else { "ending with" },
         if args.exact { "exactly" } else { "" },
-        args.pattern
+        args.patterns.join(", ")
     );
     println!("Using {}-word seed phrases", args.word_count());
 
@@ -40,9 +41,10 @@ fn main() {
         results.len(),
     );
 
-    for (i, (seed, addr)) in results.iter().enumerate() {
+    for (i, (seed, addr, pattern)) in results.iter().enumerate() {
         println!("---------------------------");
         println!("Match {} of {}", i + 1, args.num_results);
+        println!("Pattern matched: {}", pattern);
         println!("Seed phrase: {}", seed);
         println!("Address: {}", addr);
         println!("---------------------------");

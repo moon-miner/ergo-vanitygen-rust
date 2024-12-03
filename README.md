@@ -101,6 +101,16 @@ ergo-vanitygen -s -p ergo -n 5
 ergo-vanitygen -e -p cafe -n 3
 ```
 
+7. Find addresses starting with either "humble" or "index":
+```bash
+ergo-vanitygen -s -p humble,index -n 2
+```
+
+8. Find three addresses ending with different words:
+```bash
+ergo-vanitygen -e -p cafe,shop,mart -n 3
+```
+
 ## Performance
 
 The generator is optimized for modern multi-core processors:

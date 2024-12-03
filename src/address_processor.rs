@@ -38,10 +38,10 @@ impl AddressProcessor {
 
     pub fn find_matches(
         &self,
-        matcher: impl Fn(&str) -> bool + Send + Sync,
+        matcher: impl Fn(&str) -> Option<String> + Send + Sync,
         word_count: usize,
         num_results: usize
-    ) -> Vec<(String, String)> {
+    ) -> Vec<(String, String, String)> {
         let progress = Arc::new(ProgressBar::new_spinner());
         progress.set_style(
             ProgressStyle::default_spinner()
@@ -90,7 +90,7 @@ impl AddressProcessor {
         });
 
         // Collect multiple results
-        let matches: Vec<(String, String)> = rayon::iter::repeat(())
+        let matches: Vec<(String, String, String)> = rayon::iter::repeat(())
             .map_init(
                 || (),
                 |_, _| {
@@ -99,15 +99,15 @@ impl AddressProcessor {
                         self.total_checked.fetch_add(1, Ordering::Relaxed);
                         let mnemonic = generate_mnemonic(word_count);
                         let address = generate_address(&mnemonic);
-                        if matcher(&address) {
-                            batch_results.push((mnemonic, address));
+                        if let Some(pattern) = matcher(&address) {
+                            batch_results.push((mnemonic, address, pattern));
                         }
                     }
                     batch_results
                 }
             )
             .flatten()
-            .take(num_results)
+            .take_any(num_results)
             .collect();
 
         self.running.store(false, Ordering::Relaxed);
