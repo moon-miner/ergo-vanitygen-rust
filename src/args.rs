@@ -23,6 +23,10 @@ pub struct Args {
     /// Generate 12-word seed phrases (default is 24)
     #[arg(long = "w12")]
     pub twelve_words: bool,
+
+    /// Number of matching addresses to find (default: 1)
+    #[arg(short = 'n', long = "num", default_value = "1")]
+    pub num_results: usize,
 }
 
 impl Args {

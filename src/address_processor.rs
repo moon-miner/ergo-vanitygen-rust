@@ -39,7 +39,8 @@ impl AddressProcessor {
     pub fn find_matches(
         &self,
         matcher: impl Fn(&str) -> bool + Send + Sync,
-        word_count: usize
+        word_count: usize,
+        num_results: usize
     ) -> Vec<(String, String)> {
         let progress = Arc::new(ProgressBar::new_spinner());
         progress.set_style(
@@ -88,25 +89,25 @@ impl AddressProcessor {
             }
         });
 
-        // Simple batch processing
+        // Collect multiple results
         let matches: Vec<(String, String)> = rayon::iter::repeat(())
             .map_init(
                 || (),
                 |_, _| {
-                    (0..self.batch_size)
-                        .into_par_iter()
-                        .map(|_| {
-                            self.total_checked.fetch_add(1, Ordering::Relaxed);
-                            let mnemonic = generate_mnemonic(word_count);
-                            let address = generate_address(&mnemonic);
-                            (mnemonic, address)
-                        })
-                        .find_first(|(_, addr)| matcher(addr))
+                    let mut batch_results = Vec::new();
+                    for _ in 0..self.batch_size {
+                        self.total_checked.fetch_add(1, Ordering::Relaxed);
+                        let mnemonic = generate_mnemonic(word_count);
+                        let address = generate_address(&mnemonic);
+                        if matcher(&address) {
+                            batch_results.push((mnemonic, address));
+                        }
+                    }
+                    batch_results
                 }
             )
-            .find_first(|result| result.is_some())
-            .and_then(|x| x)
-            .into_iter()
+            .flatten()
+            .take(num_results)
             .collect();
 
         self.running.store(false, Ordering::Relaxed);

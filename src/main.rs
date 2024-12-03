@@ -16,7 +16,8 @@ fn main() {
     }
     
     println!(
-        "Looking for addresses that {} {} with \"{}\"",
+        "Looking for {} addresses that {} {} with \"{}\"",
+        args.num_results,
         if args.start { "start" } else { "end" },
         if args.exact { "exactly" } else { "" },
         args.pattern
@@ -25,7 +26,7 @@ fn main() {
 
     let processor = AddressProcessor::new();
     let matcher = args.matcher();
-    let results = processor.find_matches(matcher, args.word_count());
+    let results = processor.find_matches(matcher, args.word_count(), args.num_results);
 
     // Get and display performance stats
     let (total, rate, threads) = processor.get_stats();
@@ -35,16 +36,13 @@ fn main() {
     println!("- Average speed: {:.0} addresses/second", rate);
 
     println!(
-        "Found {} addresses {}ing {} with \"{}\"",
+        "\nFound {} matching addresses:",
         results.len(),
-        if args.start { "start" } else { "end" },
-        if args.exact { "exactly" } else { "" },
-        args.pattern
     );
 
     for (i, (seed, addr)) in results.iter().enumerate() {
         println!("---------------------------");
-        println!("Match {}", i + 1);
+        println!("Match {} of {}", i + 1, args.num_results);
         println!("Seed phrase: {}", seed);
         println!("Address: {}", addr);
         println!("---------------------------");
