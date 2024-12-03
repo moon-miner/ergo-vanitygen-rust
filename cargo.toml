@@ -20,7 +20,7 @@ hmac = "0.12"
 pbkdf2 = { version = "0.12", features = ["parallel"] }
 sha2 = "0.10"
 unicode-normalization = "0.1"
-ergo-lib = "0.28"
+ergo-lib = { version = "0.28", features = ["mnemonic_gen"] }
 rand = "0.8"
 rayon = "1.8"
 indicatif = "0.17"
