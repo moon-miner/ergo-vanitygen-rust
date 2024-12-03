@@ -1,0 +1,18 @@
+[package]
+name = "ergo-vanitygen"
+version = "1.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.4", features = ["derive"] }
+bip39 = "2.1"
+hmac = "0.12"
+pbkdf2 = { version = "0.12", features = ["parallel"] }
+sha2 = "0.10"
+unicode-normalization = "0.1"
+ergo-lib = "0.28"
+rand = "0.8"
+rayon = "1.8"
+indicatif = "0.17"
+num_cpus = "1.16"
+bs58 = "0.4"
