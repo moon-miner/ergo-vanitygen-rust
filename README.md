@@ -45,12 +45,14 @@ The compiled binary will be available at `target/release/ergo-vanitygen-rust.exe
 ergo-vanitygen -p <pattern>
 
 # Options
--p, --pattern <pattern>    Pattern to look for in addresses
--s, --start               Look for pattern at start (must start with e,f,g,h,i)
--e, --end                 Look for pattern at end of addresses
+-p, --pattern <pattern>    Patterns to look for (comma-separated)
+-s, --start               Look for pattern at start
+-e, --end                 Look for pattern at end
 -m, --matchCase           Match pattern with case sensitivity
-    --w12                 Generate 12-word seed phrases (default is 24)
--n, --num <number>        Number of matching addresses to find (default: 1)
+    --w12                 Generate 12-word seed phrases (default: 24)
+-n, --num <number>        Number of matches to find (default: 1)
+-b, --balanced           Try to find matches for all patterns evenly
+    --estimate           Estimate time to find matches before starting
 ```
 
 ### Pattern Matching Rules
@@ -153,3 +155,24 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Disclaimer
 
 This tool is for educational and entertainment purposes. Always verify generated addresses before use. The authors are not responsible for any loss of funds. 
+
+## Difficulty Estimation
+```bash
+# Estimate time to find matches
+ergo-vanitygen -s -p ergo,humble --estimate
+
+# Example output:
+Difficulty Estimation
+====================
+Pattern: "ergo"
+Estimated attempts needed: 3,125
+Estimated time to find:
+  At 8,000 addr/s: 0.4 seconds
+  At 15,000 addr/s: 0.2 seconds
+
+Pattern: "humble"
+Estimated attempts needed: 15,625
+Estimated time to find:
+  At 8,000 addr/s: 2.0 seconds
+  At 15,000 addr/s: 1.0 seconds
+``` 

@@ -27,6 +27,14 @@ pub struct Args {
     /// Number of matching addresses to find (default: 1)
     #[arg(short = 'n', long = "num", default_value = "1")]
     pub num_results: usize,
+
+    /// Try to find matches for all patterns evenly
+    #[arg(short = 'b', long = "balanced")]
+    pub balanced: bool,
+
+    /// Estimate time to find matches before starting
+    #[arg(long = "estimate")]
+    pub estimate: bool,
 }
 
 impl Args {

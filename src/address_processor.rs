@@ -4,6 +4,7 @@ use std::time::{Duration, Instant};
 use rayon::prelude::*;
 use indicatif::{ProgressBar, ProgressStyle};
 use crate::utils::{generate_mnemonic, generate_address};
+use std::sync::Mutex;
 
 pub struct AddressProcessor {
     total_checked: Arc<AtomicUsize>,
@@ -40,7 +41,9 @@ impl AddressProcessor {
         &self,
         matcher: impl Fn(&str) -> Option<String> + Send + Sync,
         word_count: usize,
-        num_results: usize
+        num_results: usize,
+        balanced: bool,
+        pattern_count: usize,
     ) -> Vec<(String, String, String)> {
         let progress = Arc::new(ProgressBar::new_spinner());
         progress.set_style(
@@ -89,26 +92,62 @@ impl AddressProcessor {
             }
         });
 
-        // Collect multiple results
-        let matches: Vec<(String, String, String)> = rayon::iter::repeat(())
-            .map_init(
-                || (),
-                |_, _| {
-                    let mut batch_results = Vec::new();
-                    for _ in 0..self.batch_size {
-                        self.total_checked.fetch_add(1, Ordering::Relaxed);
-                        let mnemonic = generate_mnemonic(word_count);
-                        let address = generate_address(&mnemonic);
-                        if let Some(pattern) = matcher(&address) {
-                            batch_results.push((mnemonic, address, pattern));
+        let matches: Vec<(String, String, String)> = if balanced {
+            // For balanced mode, try to get num_results/pattern_count for each pattern
+            let per_pattern = (num_results + pattern_count - 1) / pattern_count;
+            let pattern_matches = Arc::new(Mutex::new(std::collections::HashMap::new()));
+            let pattern_matches_clone = pattern_matches.clone();
+
+            rayon::iter::repeat(())
+                .map_init(
+                    || (),
+                    |_, _| {
+                        let mut batch_results = Vec::new();
+                        for _ in 0..self.batch_size {
+                            self.total_checked.fetch_add(1, Ordering::Relaxed);
+                            let mnemonic = generate_mnemonic(word_count);
+                            let address = generate_address(&mnemonic);
+                            if let Some(pattern) = matcher(&address) {
+                                // Only add if we need more of this pattern
+                                let count = pattern_matches_clone.lock().unwrap()
+                                    .get(&pattern).copied().unwrap_or(0);
+                                if count < per_pattern {
+                                    batch_results.push((mnemonic, address, pattern.clone()));
+                                }
+                            }
                         }
+                        batch_results
                     }
-                    batch_results
-                }
-            )
-            .flatten()
-            .take_any(num_results)
-            .collect();
+                )
+                .flatten()
+                .inspect(|(_, _, pattern)| {
+                    let mut map = pattern_matches_clone.lock().unwrap();
+                    *map.entry(pattern.clone()).or_insert(0) += 1;
+                })
+                .take_any(num_results)
+                .collect()
+        } else {
+            // Original unbalanced behavior
+            rayon::iter::repeat(())
+                .map_init(
+                    || (),
+                    |_, _| {
+                        let mut batch_results = Vec::new();
+                        for _ in 0..self.batch_size {
+                            self.total_checked.fetch_add(1, Ordering::Relaxed);
+                            let mnemonic = generate_mnemonic(word_count);
+                            let address = generate_address(&mnemonic);
+                            if let Some(pattern) = matcher(&address) {
+                                batch_results.push((mnemonic, address, pattern));
+                            }
+                        }
+                        batch_results
+                    }
+                )
+                .flatten()
+                .take_any(num_results)
+                .collect()
+        };
 
         self.running.store(false, Ordering::Relaxed);
         progress_thread.join().unwrap();
