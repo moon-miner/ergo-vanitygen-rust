@@ -28,6 +28,10 @@ pub struct Args {
     #[arg(short = 'n', long = "num", default_value = "1")]
     pub num_results: usize,
 
+    /// Number of addresses to check per seed (default: 1)
+    #[arg(short = 'i', long = "index", default_value = "1")]
+    pub addresses_per_seed: u32,
+
     /// Try to find matches for all patterns evenly
     #[arg(short = 'b', long = "balanced")]
     pub balanced: bool,
@@ -89,7 +93,7 @@ impl Args {
                 }
                 None
             })
-        } else {
+        } else if self.end {
             Box::new(move |addr: &str| {
                 let addr_to_check = if self.exact {
                     addr.to_string()
@@ -99,6 +103,21 @@ impl Args {
                 
                 for pattern in &patterns {
                     if addr_to_check.ends_with(pattern) {
+                        return Some(pattern.clone());
+                    }
+                }
+                None
+            })
+        } else {
+            Box::new(move |addr: &str| {
+                let addr_to_check = if self.exact {
+                    addr.to_string()
+                } else {
+                    addr.to_lowercase()
+                };
+                
+                for pattern in &patterns {
+                    if addr_to_check.contains(pattern) {
                         return Some(pattern.clone());
                     }
                 }

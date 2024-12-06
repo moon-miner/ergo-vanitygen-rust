@@ -5,11 +5,12 @@ A high-performance vanity address generator for Ergo blockchain, written in Rust
 ## Features
 
 - Generate Ergo addresses matching specific patterns
+- Check multiple addresses from the same seed (new!)
 - Support for both 12 and 24-word seed phrases
 - Multi-threaded processing for optimal performance
 - Case-sensitive and case-insensitive matching
-- Match patterns at start or end of addresses
-- Real-time progress monitoring
+- Match patterns at start, end, or anywhere in addresses
+- Real-time progress monitoring with seed and address rates
 - Real-time display of matches as they are found
 - Performance statistics
 
@@ -61,6 +62,7 @@ ergo-vanitygen -p <pattern>
 -s, --start               Look for pattern at start
 -e, --end                 Look for pattern at end
 -m, --matchCase           Match pattern with case sensitivity
+-i, --index <number>      Number of addresses to check per seed (default: 1)
     --w12                 Generate 12-word seed phrases (default: 24)
 -n, --num <number>        Number of matches to find (default: 1)
 -b, --balanced           Try to find matches for all patterns evenly
@@ -79,30 +81,30 @@ ergo-vanitygen -p <pattern>
    - No restrictions on pattern
    - Example: `-e -p cafe` will find addresses ending with "cafe"
 
-3. Anywhere matching (default):
+3. Anywhere matching (default, no -s or -e):
    - No restrictions on pattern
-   - Example: `-p lucky` will find addresses containing "lucky"
+   - Example: `-p lucky` will find addresses containing "lucky" anywhere
 
 ### Examples
 
-1. Find an address starting with "ergo":
+1. Find an address starting with "ergo", checking first 10 addresses from each seed:
 ```bash
-ergo-vanitygen -s -p ergo
+ergo-vanitygen -s -p ergo -i 10
 ```
 
-2. Find an address ending with "cafe" (case-insensitive):
+2. Find an address ending with "cafe" in first 5 positions:
 ```bash
-ergo-vanitygen -e -p cafe
+ergo-vanitygen -e -p cafe -i 5
 ```
 
-3. Find an address containing "lucky" using 12-word seed:
+3. Find an address containing "lucky" using 12-word seed, checking 20 addresses per seed:
 ```bash
-ergo-vanitygen -p lucky --w12
+ergo-vanitygen -p lucky --w12 -i 20
 ```
 
-4. Find an address ending with "ERGO" (case-sensitive):
+4. Find multiple patterns across first 10 addresses of each seed:
 ```bash
-ergo-vanitygen -e -p ERGO -m
+ergo-vanitygen -p ergo,sigma -i 10 -n 5 -b
 ```
 
 5. Find five addresses starting with "ergo":
@@ -122,7 +124,7 @@ ergo-vanitygen -s -p humble,index -n 2
 
 8. Find three addresses ending with different words:
 ```bash
-ergo-vanitygen -e -p cafe,shop,mart -n 3
+ergo-vanitygen -e -p cafe,shop,mart -n 3 -b
 ```
 
 ## Performance
@@ -130,15 +132,18 @@ ergo-vanitygen -e -p cafe,shop,mart -n 3
 The generator is optimized for modern multi-core processors:
 - Utilizes all available CPU cores
 - Efficient batch processing
-- Minimal memory overhead
-- Real-time progress monitoring
+- Reuses master key for multiple addresses from same seed
+- Real-time progress monitoring showing both seed and address rates
 - Multiple result collection
 
-Tested performance:
+Tested performance (single address per seed):
 - Mid-range CPU (6-8 cores): ~8,000 addresses/second
 - High-end CPU (12+ cores): ~15,000 addresses/second
 
-Note: Actual performance will vary based on your system specifications.
+Tested performance (with -i 10) Using CPU-native optimizations (RUSTFLAGS="-C target-cpu=native"):
+- AMD Ryzen 7 7800X3D (16 threads): ~4,300 seeds/second (~43,000 addresses/second)
+
+Note: Actual performance will vary based on your system specifications and build options.
 Performance may be lower when collecting multiple results as the program
 continues searching until all requested matches are found.
 
@@ -146,8 +151,9 @@ continues searching until all requested matches are found.
 
 - All seed phrases are generated securely using system entropy
 - Implements BIP39 for mnemonic generation
-- Follows EIP-3 for Ergo address derivation (m/44'/429'/0'/0/0)
+- Follows EIP-3 for Ergo address derivation (m/44'/429'/0'/0/X)
 - No seed phrases are stored or transmitted
+- Each seed can generate multiple addresses using standard derivation paths
 
 ## Contributing
 
@@ -179,12 +185,12 @@ Difficulty Estimation
 Pattern: "ergo"
 Estimated attempts needed: 3,125
 Estimated time to find:
-  At 8,000 addr/s: 0.4 seconds
-  At 15,000 addr/s: 0.2 seconds
+  At 10,000 addr/s: 0.3 seconds
+  At 20,000 addr/s: 0.2 seconds
 
 Pattern: "humble"
 Estimated attempts needed: 15,625
 Estimated time to find:
-  At 8,000 addr/s: 2.0 seconds
-  At 15,000 addr/s: 1.0 seconds
+  At 10,000 addr/s: 1.6 seconds
+  At 20,000 addr/s: 0.8 seconds
 ``` 

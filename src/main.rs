@@ -39,6 +39,7 @@ fn main() {
         args.patterns.join(", ")
     );
     println!("Using {}-word seed phrases", args.word_count());
+    println!("Checking {} addresses per seed", args.addresses_per_seed);
 
     let processor = AddressProcessor::new();
     let matcher = args.matcher();
@@ -47,13 +48,16 @@ fn main() {
         args.word_count(), 
         args.num_results,
         args.balanced,
-        args.patterns.len()
+        args.patterns.len(),
+        args.addresses_per_seed
     );
 
     // Get and display performance stats
-    let (total, rate, threads) = processor.get_stats();
+    let (total_seeds, total_addresses, seed_rate, address_rate, threads) = processor.get_stats();
     println!("\nPerformance Statistics:");
     println!("- Using {} threads", threads);
-    println!("- Checked {} addresses", total);
-    println!("- Average speed: {:.0} addresses/second", rate);
+    println!("- Checked {} seeds", total_seeds);
+    println!("- Checked {} addresses", total_addresses);
+    println!("- Average speed: {:.0} seeds/second", seed_rate);
+    println!("- Average speed: {:.0} addresses/second", address_rate);
 }

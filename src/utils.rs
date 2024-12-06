@@ -9,41 +9,51 @@ use ergo_lib::{
         mnemonic_generator::{Language, MnemonicGenerator},
     },
 };
-use std::sync::OnceLock;
 
-// Cache common objects
-static PATH: OnceLock<DerivationPath> = OnceLock::new();
+#[derive(Debug)]
+pub struct AddressInfo {
+    pub address: String,
+    pub position: u32,
+}
 
-pub fn generate_address(mnemonic: &str) -> String {
+pub fn generate_addresses(mnemonic: &str, count: u32) -> Vec<AddressInfo> {
     // Create seed using ergo-lib's Mnemonic implementation with empty password
     let seed = Mnemonic::to_seed(mnemonic, "");
     
     // Create master key with usePre1627KeyDerivation = false (handled by ergo-lib)
     let master_key = ExtSecretKey::derive_master(seed)
         .expect("Failed to derive master key");
-    
-    // Use cached derivation path for EIP-3: m/44'/429'/0'/0/0
-    let path = PATH.get_or_init(|| {
-        // Create path with account index 0' and address index 0
-        // The purpose (44') and coin type (429') are added automatically
-        DerivationPath::new(
-            ChildIndexHardened::from_31_bit(0)
-                .expect("Invalid account index"),
-            vec![ChildIndexNormal::normal(0)
-                .expect("Invalid address index")],
-        )
-    });
-    
-    let derived_key = master_key.derive(path.clone())
-        .expect("Failed to derive key");
-    
-    // Get the public key and convert it to an address
-    let ext_pub_key = derived_key.public_key()
-        .expect("Failed to get public key");
-    let address: Address = ext_pub_key.into();
-    
-    // Get the encoded address with mainnet prefix
-    AddressEncoder::encode_address_as_string(NetworkPrefix::Mainnet, &address)
+
+    let account = ChildIndexHardened::from_31_bit(0)
+        .expect("Invalid account index");
+
+    // Generate addresses for indices 0 to count-1
+    (0..count)
+        .map(|idx| {
+            // Create path for current index: m/44'/429'/0'/0/idx
+            let path = DerivationPath::new(
+                account,
+                vec![ChildIndexNormal::normal(idx)
+                    .expect("Invalid address index")],
+            );
+            
+            let derived_key = master_key.derive(path)
+                .expect("Failed to derive key");
+            
+            // Get the public key and convert it to an address
+            let ext_pub_key = derived_key.public_key()
+                .expect("Failed to get public key");
+            let address: Address = ext_pub_key.into();
+            
+            // Get the encoded address with mainnet prefix
+            let address = AddressEncoder::encode_address_as_string(NetworkPrefix::Mainnet, &address);
+            
+            AddressInfo {
+                address,
+                position: idx,
+            }
+        })
+        .collect()
 }
 
 pub fn generate_mnemonic(word_count: usize) -> String {
