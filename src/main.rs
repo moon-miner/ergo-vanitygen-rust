@@ -42,7 +42,7 @@ fn main() {
 
     let processor = AddressProcessor::new();
     let matcher = args.matcher();
-    let results = processor.find_matches(
+    let _results = processor.find_matches(
         matcher, 
         args.word_count(), 
         args.num_results,
@@ -56,18 +56,4 @@ fn main() {
     println!("- Using {} threads", threads);
     println!("- Checked {} addresses", total);
     println!("- Average speed: {:.0} addresses/second", rate);
-
-    println!(
-        "\nFound {} matching addresses:",
-        results.len(),
-    );
-
-    for (i, (seed, addr, pattern)) in results.iter().enumerate() {
-        println!("---------------------------");
-        println!("Match {} of {}", i + 1, args.num_results);
-        println!("Pattern matched: {}", pattern);
-        println!("Seed phrase: {}", seed);
-        println!("Address: {}", addr);
-        println!("---------------------------");
-    }
 }

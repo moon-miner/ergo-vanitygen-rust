@@ -69,11 +69,9 @@ impl AddressProcessor {
                 let delta_checked = current_checked - last_checked;
                 let delta_time = current_time.duration_since(last_time).as_secs_f64();
                 
-                // Only calculate rate if we have a meaningful time delta
-                if delta_time >= 0.1 { // At least 100ms
+                if delta_time >= 0.1 {
                     let rate = delta_checked as f64 / delta_time;
                     
-                    // Skip the first update to avoid initial spike
                     if !first_update {
                         max_rate = max_rate.max(rate);
                     }
@@ -93,10 +91,11 @@ impl AddressProcessor {
         });
 
         let matches: Vec<(String, String, String)> = if balanced {
-            // For balanced mode, try to get num_results/pattern_count for each pattern
             let per_pattern = (num_results + pattern_count - 1) / pattern_count;
             let pattern_matches = Arc::new(Mutex::new(std::collections::HashMap::new()));
             let pattern_matches_clone = pattern_matches.clone();
+            let found_count = Arc::new(AtomicUsize::new(0));
+            let found_count_clone = found_count.clone();
 
             rayon::iter::repeat(())
                 .map_init(
@@ -108,7 +107,6 @@ impl AddressProcessor {
                             let mnemonic = generate_mnemonic(word_count);
                             let address = generate_address(&mnemonic);
                             if let Some(pattern) = matcher(&address) {
-                                // Only add if we need more of this pattern
                                 let count = pattern_matches_clone.lock().unwrap()
                                     .get(&pattern).copied().unwrap_or(0);
                                 if count < per_pattern {
@@ -120,14 +118,26 @@ impl AddressProcessor {
                     }
                 )
                 .flatten()
-                .inspect(|(_, _, pattern)| {
+                .inspect(|(mnemonic, address, pattern)| {
                     let mut map = pattern_matches_clone.lock().unwrap();
-                    *map.entry(pattern.clone()).or_insert(0) += 1;
+                    let current_count = map.entry(pattern.clone()).or_insert(0);
+                    *current_count += 1;
+                    let total_found = found_count_clone.fetch_add(1, Ordering::Relaxed) + 1;
+                    
+                    // Display result immediately
+                    println!("\n---------------------------");
+                    println!("Match {} of {}", total_found, num_results);
+                    println!("Pattern matched: {}", pattern);
+                    println!("Seed phrase: {}", mnemonic);
+                    println!("Address: {}", address);
+                    println!("---------------------------");
                 })
                 .take_any(num_results)
                 .collect()
         } else {
-            // Original unbalanced behavior
+            let found_count = Arc::new(AtomicUsize::new(0));
+            let found_count_clone = found_count.clone();
+
             rayon::iter::repeat(())
                 .map_init(
                     || (),
@@ -145,6 +155,17 @@ impl AddressProcessor {
                     }
                 )
                 .flatten()
+                .inspect(|(mnemonic, address, pattern)| {
+                    let total_found = found_count_clone.fetch_add(1, Ordering::Relaxed) + 1;
+                    
+                    // Display result immediately
+                    println!("\n---------------------------");
+                    println!("Match {} of {}", total_found, num_results);
+                    println!("Pattern matched: {}", pattern);
+                    println!("Seed phrase: {}", mnemonic);
+                    println!("Address: {}", address);
+                    println!("---------------------------");
+                })
                 .take_any(num_results)
                 .collect()
         };
