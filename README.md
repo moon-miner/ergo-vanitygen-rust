@@ -24,6 +24,7 @@ Ergo P2PK addresses follow a specific format:
 
 ### Pre-built Binary
 Download the latest Windows release from the [releases page](https://github.com/arkadianet/ergo-vanitygen/releases).
+Note: Pre-built binaries are compiled without CPU-specific optimizations for maximum compatibility. For best performance, consider building from source with CPU-native optimizations enabled.
 
 ### Building from source
 
@@ -34,10 +35,20 @@ Prerequisites:
 ```bash
 git clone https://github.com/arkadianet/ergo-vanitygen-rust
 cd ergo-vanitygen-rust
+
+# For standard build
 cargo build --release
+
+# For optimized build with CPU-specific instructions (recommended, ~8.5% faster)
+# Linux/macOS:
+RUSTFLAGS="-C target-cpu=native" cargo build --release
+# Windows PowerShell:
+$env:RUSTFLAGS="-C target-cpu=native"; cargo build --release
 ```
 
 The compiled binary will be available at `target/release/ergo-vanitygen-rust.exe`.
+
+Note: The CPU-native build will enable optimizations specific to your processor, potentially improving performance by ~8.5% (primarily in address generation). However, the resulting binary may not be portable to other computers with different CPU architectures.
 
 ## Usage
 
