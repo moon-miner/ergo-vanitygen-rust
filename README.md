@@ -10,6 +10,7 @@ A high-performance vanity address generator for Ergo blockchain, written in Rust
 - Case-sensitive and case-insensitive matching
 - Match patterns at start or end of addresses
 - Real-time progress monitoring
+- Real-time display of matches as they are found
 - Performance statistics
 
 ## Address Format
