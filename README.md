@@ -22,7 +22,7 @@ Ergo P2PK addresses follow a specific format:
 ## Installation
 
 ### Pre-built Binary
-Download the latest Windows release from the [releases page](https://github.com/arkadianet/ergo-vanitygen/releases).
+Download the latest Windows release from the [releases page](https://github.com/arkadianet/ergo-vanitygen-rust/releases).
 
 ### Building from source
 
