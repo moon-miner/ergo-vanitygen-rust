@@ -142,6 +142,7 @@ Tested performance (single address per seed):
 
 Tested performance (with -i 10) Using CPU-native optimizations (RUSTFLAGS="-C target-cpu=native"):
 - AMD Ryzen 7 7800X3D (16 threads): ~4,300 seeds/second (~43,000 addresses/second)
+- AMD Ryzen 9 5950x (32 threads): ~7,100 sees/second (~71,000 adresses/second)
 
 Note: Actual performance will vary based on your system specifications and build options.
 Performance may be lower when collecting multiple results as the program
