@@ -165,7 +165,6 @@ Special thanks to:
 
 * [Ergo Platform](https://ergoplatform.org/)
 * [sigma-rust](https://github.com/ergoplatform/sigma-rust)
-* [ergo-lib](https://github.com/ergoplatform/sigma-rust/tree/develop/ergo-lib)
 * Original [ergo-vanitygen](https://github.com/jellymlg/ergo-vanitygen) by jellymlg
 
 ## ⚠️ Disclaimer
