@@ -2,12 +2,40 @@ mod args;
 mod utils;
 mod address_processor;
 mod estimator;
+mod matcher;
+mod progress;
+
+#[cfg(feature = "gui")]
+mod gui;
+
+mod paper_wallet;
 
 use clap::Parser;
 use args::Args;
 use address_processor::AddressProcessor;
 
 fn main() {
+    #[cfg(feature = "gui")]
+    {
+        // Check for --no-gui flag
+        if std::env::args().any(|arg| arg == "--no-gui") {
+            run_cli();
+        } else {
+            // Launch GUI by default
+            if let Err(e) = gui::run_gui() {
+                eprintln!("Error running GUI: {}", e);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    #[cfg(not(feature = "gui"))]
+    {
+        run_cli();
+    }
+}
+
+fn run_cli() {
     let args = Args::parse();
     
     // Validate arguments
@@ -29,12 +57,21 @@ fn main() {
         return;
     }
     
+    // Create matcher and start search
+    let location = if args.start { 
+        "starting with" 
+    } else if args.end { 
+        "ending with" 
+    } else { 
+        "containing" 
+    };
+    
     println!(
         "Looking for {} addresses {} {} patterns {} {} {}",
         args.num_results,
         if args.balanced { "balanced across" } else { "matching" },
         args.patterns.len(),
-        if args.start { "starting with" } else { "ending with" },
+        location,
         if args.exact { "exactly" } else { "" },
         args.patterns.join(", ")
     );
@@ -42,13 +79,12 @@ fn main() {
     println!("Checking {} addresses per seed", args.addresses_per_seed);
 
     let processor = AddressProcessor::new();
-    let matcher = args.matcher();
+    let matcher = args.create_matcher();
     let _results = processor.find_matches(
         matcher, 
         args.word_count(), 
         args.num_results,
         args.balanced,
-        args.patterns.len(),
         args.addresses_per_seed
     );
 

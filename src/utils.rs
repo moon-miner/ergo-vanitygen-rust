@@ -9,6 +9,7 @@ use ergo_lib::{
         mnemonic_generator::{Language, MnemonicGenerator},
     },
 };
+use rand::Rng;
 
 #[derive(Debug)]
 pub struct AddressInfo {
@@ -56,15 +57,31 @@ pub fn generate_addresses(mnemonic: &str, count: u32) -> Vec<AddressInfo> {
         .collect()
 }
 
-pub fn generate_mnemonic(word_count: usize) -> String {
-    let strength = match word_count {
-        12 => 128,
-        24 => 256,
-        _ => panic!("Unsupported word count"),
+pub fn generate_mnemonic(word_count: usize) -> (String, usize) {
+    let (strength, actual_word_count) = if word_count == 0 {
+        // If word_count is 0, randomly select one of the supported lengths
+        let supported_lengths = [12, 15, 24];
+        let random_index = rand::thread_rng().gen_range(0..supported_lengths.len());
+        let random_word_count = supported_lengths[random_index];
+        match random_word_count {
+            12 => (128, 12),
+            15 => (160, 15),
+            24 => (256, 24),
+            _ => unreachable!(),
+        }
+    } else {
+        match word_count {
+            12 => (128, 12),
+            15 => (160, 15),
+            24 => (256, 24),
+            _ => panic!("Unsupported word count"),
+        }
     };
     
     // Use ergo-lib's mnemonic generator
     let generator = MnemonicGenerator::new(Language::English, strength);
-    generator.generate()
-        .expect("Failed to generate mnemonic")
+    let mnemonic = generator.generate()
+        .expect("Failed to generate mnemonic");
+        
+    (mnemonic, actual_word_count)
 }
