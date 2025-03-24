@@ -14,11 +14,11 @@ Want your Ergo address to contain your name, a word, or your favorite number? Th
 ✅ **Customizable seed phrases** – Supports 12, 15, or 24-word seed phrases  
 ✅ **Real-time feedback** – Watch progress and matches in real-time  
 ✅ **Cold storage support** – Generate secure paper wallets  
-✅ **Cross-platform compatibility** – Runs on Windows, Linux, and macOS  
+✅ **Cross-platform compatibility** – Runs on Windows, Linux.
 
 ## 🏃 Quick Start
 
-1. **Download** the latest release from the [releases page](https://github.com/arkadianet/ergo-vanitygen/releases)
+1. **Download** the latest release from the [releases page](https://github.com/arkadianet/ergo-vanitygen-rust/releases)
 2. **Run** the application (double-click the file or run via terminal)
 3. **Enter** your desired pattern(s)
 4. **Click** Start Search — and watch the magic happen!
@@ -39,7 +39,7 @@ Ergo addresses have a specific format:
 
 | Platform | Download |
 |----------|----------|
-| Windows | Download the `.exe` file from the [releases page](https://github.com/arkadianet/ergo-vanitygen/releases) |
+| Windows | Download the `.exe` file from the [releases page](https://github.com/arkadianet/ergo-vanitygen-rust/releases) |
 | Linux | Download the standard executable or `.AppImage` (no installation required) |
 | macOS | Coming soon! |
 
@@ -163,9 +163,7 @@ This project is licensed under the MIT License – see the LICENSE file for deta
 
 Special thanks to:
 
-* [Ergo Platform](https://ergoplatform.org/)
 * [sigma-rust](https://github.com/ergoplatform/sigma-rust)
-* [ergo-lib](https://github.com/ergoplatform/sigma-rust/tree/develop/ergo-lib)
 * Original [ergo-vanitygen](https://github.com/jellymlg/ergo-vanitygen) by jellymlg
 
 ## ⚠️ Disclaimer
