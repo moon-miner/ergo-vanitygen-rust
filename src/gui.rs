@@ -38,7 +38,11 @@ pub struct VanityGenApp {
     num_results: usize,
     balanced: bool,
     current_tab: Tab,
-
+    
+    // Add security options
+    mask_seed_phrases: bool,
+    show_security_warning: bool,
+    
     // --- Results and Statistics ---
     results: Arc<Mutex<Vec<MatchResult>>>,
     logs: VecDeque<String>,
@@ -66,6 +70,11 @@ impl Default for VanityGenApp {
             num_results: 1,
             balanced: false,
             current_tab: Tab::Status,
+            
+            // Initialize security options
+            mask_seed_phrases: true,
+            show_security_warning: true,
+            
             results: Arc::new(Mutex::new(Vec::new())),
             logs: VecDeque::with_capacity(MAX_LOG_ENTRIES),
             stats: Arc::new(Mutex::new(None)),
@@ -265,7 +274,7 @@ impl App for VanityGenApp {
                     if donate_button.hovered() {
                         egui::show_tooltip(ui.ctx(), egui::Id::new("donation_tooltip"), |ui| {
                             ui.label("Click to copy donation address");
-                            ui.label("9fMUoW2fVXzG8yBaGzaRNtWS8wcpNLJc6HCPrK6YFs6SkNDYryK");
+                            ui.label("9ergoFunMJ5MffMM31siayxK4juNGJ1qBQXukFJRy4jXVF4S66K");
                         });
                     }
                 });
@@ -638,9 +647,7 @@ impl VanityGenApp {
                 });
             }
             ui.add_space(12.0);
-            let frame = egui::Frame::dark_canvas(&ui.ctx().style())
-                .rounding(egui::Rounding::same(6.0))
-                .inner_margin(12.0);
+
             frame.show(ui, |ui| {
                 ui.heading("Current Configuration");
                 ui.add_space(8.0);
@@ -688,6 +695,41 @@ impl VanityGenApp {
     fn show_results(&mut self, ui: &mut Ui) {
         ui.heading(RichText::new("Found Matches").size(24.0).color(Color32::WHITE));
         ui.add_space(8.0);
+        
+        // Add security options
+        ui.horizontal(|ui| {
+            ui.checkbox(&mut self.mask_seed_phrases, "Mask seed phrases")
+                .on_hover_text("Hide seed phrases for security");
+            
+            if ui.button("Security Tips").clicked() {
+                self.show_security_warning = true;
+            }
+        });
+        
+        // Security warning popup
+        if self.show_security_warning {
+            egui::Window::new("⚠️ Security Warning")
+                .collapsible(false)
+                .resizable(false)
+                .min_width(400.0)
+                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .frame(egui::Frame::window(&ui.ctx().style()).fill(Color32::from_rgb(240, 240, 240)))
+                .show(ui.ctx(), |ui| {
+                    ui.label(RichText::new("Security Best Practices").strong().size(16.0));
+                    ui.separator();
+                    ui.label("• Use at your own risk; The author assumes no responsibility for loss of funds.");
+                    ui.label("• Verify seed phrase restores the correct wallet");
+                    ui.label("• Keep seed phrases private - never share them");
+                    ui.label("• Use paper wallets in a secure, offline environment");
+                    ui.label("• Clear clipboard after copying sensitive data");
+                    ui.label("• Consider BIP39 passphrase for additional security");
+                    ui.add_space(10.0);
+                    if ui.button("Close").clicked() {
+                        self.show_security_warning = false;
+                    }
+                });
+        }
+        
         let results = self.results.lock().unwrap().clone();
         ui.label(RichText::new(format!("Total matches found: {}", results.len())).strong());
         ui.add_space(4.0);
@@ -734,13 +776,41 @@ impl VanityGenApp {
                         ui.horizontal(|ui| {
                             ui.strong(format!("Seed phrase ({}-word):", word_count));
                         });
-                        ui.horizontal_wrapped(|ui| {
-                            ui.label(RichText::new(mnemonic).monospace().color(Color32::LIGHT_YELLOW));
-                        });
+                        
+                        // Show masked or unmasked seed phrase based on user preference
+                        if self.mask_seed_phrases {
+                            ui.horizontal(|ui| {
+                                let masked_seed = self.mask_sensitive_data(mnemonic);
+                                ui.label(RichText::new(masked_seed).monospace().color(Color32::LIGHT_YELLOW));
+                                
+                                if ui.small_button("👁 Show").clicked() {
+                                    // Temporarily show the seed phrase in a dedicated window
+                                    let ctx = ui.ctx().clone();
+                                    let mnemonic_clone = mnemonic.clone();
+                                    egui::show_tooltip_at_pointer(&ctx, egui::Id::new(format!("seed_tooltip_{}", i)), |ui| {
+                                        ui.label(RichText::new("⚠️ SENSITIVE DATA").strong().color(Color32::RED));
+                                        ui.label(RichText::new(&mnemonic_clone).monospace());
+                                        ui.label("Window will close automatically");
+                                    });
+                                }
+                            });
+                        } else {
+                            ui.horizontal_wrapped(|ui| {
+                                ui.label(RichText::new(mnemonic).monospace().color(Color32::LIGHT_YELLOW));
+                            });
+                        }
+                        
                         ui.horizontal(|ui| {
                             if ui.small_button("📋 Copy seed").clicked() {
                                 ui.output_mut(|o| o.copied_text = mnemonic.clone());
-                                self.add_log("Seed phrase copied to clipboard");
+                                self.add_log("Seed phrase copied to clipboard - clear clipboard when done!");
+                                
+                                // Prompt user to clear clipboard after 60 seconds
+                                let ctx = ui.ctx().clone();
+                                std::thread::spawn(move || {
+                                    std::thread::sleep(std::time::Duration::from_secs(60));
+                                    ctx.request_repaint(); // Request repaint to show the notification
+                                });
                             }
                             
                             // Add paper wallet generation button
@@ -773,7 +843,7 @@ impl VanityGenApp {
             .save_file() {
                 Some(path) => {
                     // Generate the paper wallet HTML
-                    match crate::paper_wallet::generate_paper_wallet(&info, &path) {
+                    match crate::paper_wallet::generate_paper_wallet(&info, &path, None) {
                         Ok(_) => {
                             self.add_log(&format!("Paper wallet saved to {}", path.display()));
                             
@@ -852,6 +922,32 @@ impl VanityGenApp {
                     }
                 });
         });
+    }
+
+    // Add a new helper function to mask sensitive data
+    fn mask_sensitive_data(&self, data: &str) -> String {
+        let words: Vec<&str> = data.split_whitespace().collect();
+        let mut masked = String::new();
+        
+        for (i, word) in words.iter().enumerate() {
+            if i > 0 {
+                masked.push(' ');
+            }
+            
+            if word.len() <= 2 {
+                masked.push_str(word);
+            } else {
+                // Show first character and last character, mask the rest
+                let first = word.chars().next().unwrap();
+                let last = word.chars().last().unwrap();
+                let mask_len = word.len() - 2;
+                masked.push(first);
+                masked.push_str(&"•".repeat(mask_len));
+                masked.push(last);
+            }
+        }
+        
+        masked
     }
 }
 

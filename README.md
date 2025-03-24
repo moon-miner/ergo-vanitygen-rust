@@ -39,7 +39,7 @@ Ergo addresses have a specific format:
 
 | Platform | Download |
 |----------|----------|
-| Windows | Download the `.exe` file from the [releases page](https://github.com/arkadianet/ergo-vanitygen-rust/releases) |
+| Windows | Download the `.exe` file from the [releases page](https://github.com/arkadianet/ergo-vanitygen/releases) |
 | Linux | Download the standard executable or `.AppImage` (no installation required) |
 | macOS | Coming soon! |
 
@@ -165,6 +165,7 @@ Special thanks to:
 
 * [Ergo Platform](https://ergoplatform.org/)
 * [sigma-rust](https://github.com/ergoplatform/sigma-rust)
+* [ergo-lib](https://github.com/ergoplatform/sigma-rust/tree/develop/ergo-lib)
 * Original [ergo-vanitygen](https://github.com/jellymlg/ergo-vanitygen) by jellymlg
 
 ## ⚠️ Disclaimer
