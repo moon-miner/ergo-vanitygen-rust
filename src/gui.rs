@@ -43,6 +43,10 @@ pub struct VanityGenApp {
     mask_seed_phrases: bool,
     show_security_warning: bool,
     
+    // Seed phrase unmasking
+    show_unmasked_seed: bool,
+    current_unmasked_seed: String,
+    
     // --- Results and Statistics ---
     results: Arc<Mutex<Vec<MatchResult>>>,
     logs: VecDeque<String>,
@@ -75,6 +79,10 @@ impl Default for VanityGenApp {
             mask_seed_phrases: true,
             show_security_warning: true,
             
+            // Seed phrase unmasking
+            show_unmasked_seed: false,
+            current_unmasked_seed: String::new(),
+            
             results: Arc::new(Mutex::new(Vec::new())),
             logs: VecDeque::with_capacity(MAX_LOG_ENTRIES),
             stats: Arc::new(Mutex::new(None)),
@@ -104,6 +112,54 @@ impl App for VanityGenApp {
         }
         if result_count > 0 {
             LAST_LOGGED_COUNT.store(result_count, Ordering::Relaxed);
+        }
+        
+        // Show unmasked seed phrase modal when requested
+        if self.show_unmasked_seed {
+            egui::Window::new("⚠️ Unmasked Seed Phrase")
+                .collapsible(false)
+                .resizable(false)
+                .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+                .show(ctx, |ui| {
+                    ui.label(RichText::new("⚠️ SENSITIVE DATA - Keep Safe").strong().size(16.0).color(Color32::RED));
+                    ui.separator();
+                    
+                    let text_style = egui::TextStyle::Monospace;
+                    let row_height = ui.text_style_height(&text_style) * 1.5;
+                    let seed_words: Vec<&str> = self.current_unmasked_seed.split_whitespace().collect();
+                    
+                    egui::Grid::new("seed_phrase_grid")
+                        .num_columns(2)
+                        .spacing([10.0, 8.0])
+                        .striped(true)
+                        .min_row_height(row_height)
+                        .show(ui, |ui| {
+                            for (i, word) in seed_words.iter().enumerate() {
+                                ui.label(RichText::new(format!("{:2}.", i+1)).strong().color(Color32::LIGHT_YELLOW));
+                                ui.label(RichText::new(*word).monospace());
+                                
+                                if i % 2 == 1 {
+                                    ui.end_row();
+                                }
+                            }
+                            
+                            // Handle odd number of words
+                            if seed_words.len() % 2 == 1 {
+                                ui.end_row();
+                            }
+                        });
+                    
+                    ui.add_space(15.0);
+                    ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
+                        if ui.button("Close").clicked() {
+                            self.show_unmasked_seed = false;
+                            self.current_unmasked_seed.clear();
+                        }
+                        
+                        ui.add_space(5.0);
+                        ui.label("Close this window when done viewing");
+                    });
+                });
         }
 
         // Left sidebar for settings and configuration
@@ -784,14 +840,9 @@ impl VanityGenApp {
                                 ui.label(RichText::new(masked_seed).monospace().color(Color32::LIGHT_YELLOW));
                                 
                                 if ui.small_button("👁 Show").clicked() {
-                                    // Temporarily show the seed phrase in a dedicated window
-                                    let ctx = ui.ctx().clone();
-                                    let mnemonic_clone = mnemonic.clone();
-                                    egui::show_tooltip_at_pointer(&ctx, egui::Id::new(format!("seed_tooltip_{}", i)), |ui| {
-                                        ui.label(RichText::new("⚠️ SENSITIVE DATA").strong().color(Color32::RED));
-                                        ui.label(RichText::new(&mnemonic_clone).monospace());
-                                        ui.label("Window will close automatically");
-                                    });
+                                    // Set the current seed to be shown in a modal
+                                    self.show_unmasked_seed = true;
+                                    self.current_unmasked_seed = mnemonic.clone();
                                 }
                             });
                         } else {
@@ -955,8 +1006,8 @@ impl VanityGenApp {
 pub fn run_gui() -> Result<(), eframe::Error> {
     let options = NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_inner_size([1024.0, 768.0])
-            .with_min_inner_size([800.0, 600.0]),
+            .with_inner_size([1440.0, 768.0])
+            .with_min_inner_size([1024.0, 600.0]),
         vsync: true,
         hardware_acceleration: eframe::HardwareAcceleration::Preferred,
         follow_system_theme: false,
