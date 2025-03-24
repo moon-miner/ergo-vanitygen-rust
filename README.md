@@ -1,186 +1,140 @@
-# Ergo Vanitygen
+# 🚀 Ergo Vanitygen
 
-A high-performance vanity address generator for Ergo blockchain, written in Rust. This is a reimplementation and optimization of the original [ergo-vanitygen](https://github.com/jellymlg/ergo-vanitygen) by jellymlg.
+A high-performance tool to create custom Ergo blockchain addresses with patterns of your choice. Built in Rust for speed and inspired by [ergo-vanitygen](https://github.com/jellymlg/ergo-vanitygen).
 
-## Features
+## 🔍 What Is Ergo Vanitygen?
 
-- Generate Ergo addresses matching specific patterns
-- Check multiple addresses from the same seed (new!)
-- Support for both 12 and 24-word seed phrases
-- Multi-threaded processing for optimal performance
-- Case-sensitive and case-insensitive matching
-- Match patterns at start, end, or anywhere in addresses
-- Real-time progress monitoring with seed and address rates
-- Real-time display of matches as they are found
-- Performance statistics
+Want your Ergo address to contain your name, a word, or your favorite number? This tool makes that possible by searching through possible addresses until it finds one that matches your desired pattern.
 
-## Address Format
+## 🔥 Key Features
 
-Ergo P2PK addresses follow a specific format:
-- Always start with '9' (mainnet prefix)
-- Second character is always one of: e, f, g, h, i
-- Example: 9eXo2H3mZkKgqB...
+✅ **User-friendly interface** – Choose between a GUI or command line mode  
+✅ **Pattern matching flexibility** – Find patterns at the beginning, end, or anywhere in the address  
+✅ **Fast processing** – Multi-threaded design utilizes all available CPU cores  
+✅ **Customizable seed phrases** – Supports 12, 15, or 24-word seed phrases  
+✅ **Real-time feedback** – Watch progress and matches in real-time  
+✅ **Cold storage support** – Generate secure paper wallets  
+✅ **Cross-platform compatibility** – Runs on Windows, Linux, and macOS  
 
-## Installation
+## 🏃 Quick Start
 
-### Pre-built Binary
-Download the latest Windows release from the [releases page](https://github.com/arkadianet/ergo-vanitygen/releases).
-Note: Pre-built binaries are compiled without CPU-specific optimizations for maximum compatibility. For best performance, consider building from source with CPU-native optimizations enabled.
+1. **Download** the latest release from the [releases page](https://github.com/arkadianet/ergo-vanitygen/releases)
+2. **Run** the application (double-click the file or run via terminal)
+3. **Enter** your desired pattern(s)
+4. **Click** Start Search — and watch the magic happen!
 
-### Building from source
+## 📚 Understanding Ergo Addresses
 
-Prerequisites:
-- Rust toolchain (1.70.0 or later)
-- Cargo package manager
+Ergo addresses have a specific format:
+
+* Mainnet addresses start with `9`
+* The second character will be one of: `e`, `f`, `g`, `h`, `i`
+* Example: `9eXo2H3mZkKgqB...`
+
+> ⚠️ If you want to search for a pattern at the beginning, it must follow the `9` and start with a valid second character.
+
+## 🛠️ Installation Options
+
+### ✅ Easy Way: Pre-built Binaries
+
+| Platform | Download |
+|----------|----------|
+| Windows | Download the `.exe` file from the [releases page](https://github.com/arkadianet/ergo-vanitygen/releases) |
+| Linux | Download the standard executable or `.AppImage` (no installation required) |
+| macOS | Coming soon! |
+
+### 👨‍💻 For Developers: Build From Source
+
+Clone the repository and build using cargo:
 
 ```bash
 git clone https://github.com/arkadianet/ergo-vanitygen-rust
 cd ergo-vanitygen-rust
-
-# For standard build
 cargo build --release
+```
 
-# For optimized build with CPU-specific instructions (recommended, ~8.5% faster)
-# Linux/macOS:
+Optimize for your hardware (use native CPU instructions for best performance):
+
+```bash
 RUSTFLAGS="-C target-cpu=native" cargo build --release
-# Windows PowerShell:
-$env:RUSTFLAGS="-C target-cpu=native"; cargo build --release
 ```
 
-The compiled binary will be available at `target/release/ergo-vanitygen-rust.exe`.
+## 💡 Usage Guide
 
-Note: The CPU-native build will enable optimizations specific to your processor, potentially improving performance by ~8.5% (primarily in address generation). However, the resulting binary may not be portable to other computers with different CPU architectures.
+### GUI Mode
 
-## Usage
+* Launch the application (GUI opens by default)
+* Enter pattern(s), adjust settings, and hit Start
+* Copy generated addresses and seed phrases directly from the interface
+
+### Command Line Mode
+
+Customize your search directly from the terminal:
 
 ```bash
-# Basic usage (find pattern anywhere in address)
-ergo-vanitygen -p <pattern>
-
-# Options
--p, --pattern <pattern>    Patterns to look for (comma-separated)
--s, --start               Look for pattern at start
--e, --end                 Look for pattern at end
--m, --matchCase           Match pattern with case sensitivity
--i, --index <number>      Number of addresses to check per seed (default: 1)
-    --w12                 Generate 12-word seed phrases (default: 24)
--n, --num <number>        Number of matches to find (default: 1)
--b, --balanced           Try to find matches for all patterns evenly
-    --estimate           Estimate time to find matches before starting
+ergo-vanitygen -p your_pattern
 ```
 
-### Pattern Matching Rules
+#### Common Options:
 
-1. Start matching (-s/--start):
-   - Pattern MUST start with one of: e, f, g, h, i
-   - Will match after the '9' prefix
-   - Example: `-s -p ergo` will find addresses like "9ergo..."
-   - Invalid: `-s -p lucky` (must start with e,f,g,h,i)
+| Option | Description |
+|--------|-------------|
+| `-p, --pattern` | Pattern(s) to search for (comma-separated) |
+| `-s, --start` | Match pattern at the start of the address |
+| `-e, --end` | Match pattern at the end of the address |
+| `-m, --matchCase` | Case-sensitive search |
+| `-i, --index <number>` | Addresses to check per seed (default: 1) |
+| `-n, --num <number>` | Number of matches to find (default: 1) |
+| `--w12` | Use 12-word seed for faster generation |
+| `--estimate` | Estimate time/difficulty before starting |
+| `--no-gui` | Force command-line mode |
 
-2. End matching (-e/--end):
-   - No restrictions on pattern
-   - Example: `-e -p cafe` will find addresses ending with "cafe"
+## 🧪 Pattern Matching Examples
 
-3. Anywhere matching (default, no -s or -e):
-   - No restrictions on pattern
-   - Example: `-p lucky` will find addresses containing "lucky" anywhere
+Find an address with "cafe" at the end:
 
-### Examples
-
-1. Find an address starting with "ergo", checking first 10 addresses from each seed:
 ```bash
-ergo-vanitygen -s -p ergo -i 10
+ergo-vanitygen -e -p cafe
 ```
 
-2. Find an address ending with "cafe" in first 5 positions:
+Find an address starting with "ergo":
+
 ```bash
-ergo-vanitygen -e -p cafe -i 5
+ergo-vanitygen -s -p ergo
 ```
 
-3. Find an address containing "lucky" using 12-word seed, checking 20 addresses per seed:
+Find multiple patterns in one search:
+
 ```bash
-ergo-vanitygen -p lucky --w12 -i 20
+ergo-vanitygen -p coffee,tea,milk -n 3
 ```
 
-4. Find multiple patterns across first 10 addresses of each seed:
+## 📈 Performance
+
+The tool scales based on your hardware:
+
+* Mid-range CPU → ~8,000 addresses/second
+* High-end CPU → ~15,000+ addresses/second
+
+You can increase throughput using the `-i` option to test multiple addresses per seed.
+
+## 🔒 Security
+
+* All seeds are generated locally — nothing is transmitted online
+* Industry-standard derivation (m/44'/429'/0'/0/X)
+* Option to create paper wallets for cold storage
+
+## 🎯 Difficulty Estimation
+
+Estimate the time and attempts needed to find a match:
+
 ```bash
-ergo-vanitygen -p ergo,sigma -i 10 -n 5 -b
-```
-
-5. Find five addresses starting with "ergo":
-```bash
-ergo-vanitygen -s -p ergo -n 5
-```
-
-6. Find three addresses ending with "cafe" (case-insensitive):
-```bash
-ergo-vanitygen -e -p cafe -n 3
-```
-
-7. Find addresses starting with either "humble" or "index":
-```bash
-ergo-vanitygen -s -p humble,index -n 2
-```
-
-8. Find three addresses ending with different words:
-```bash
-ergo-vanitygen -e -p cafe,shop,mart -n 3 -b
-```
-
-## Performance
-
-The generator is optimized for modern multi-core processors:
-- Utilizes all available CPU cores
-- Efficient batch processing
-- Reuses master key for multiple addresses from same seed
-- Real-time progress monitoring showing both seed and address rates
-- Multiple result collection
-
-Tested performance (single address per seed):
-- Mid-range CPU (6-8 cores): ~8,000 addresses/second
-- High-end CPU (12+ cores): ~15,000 addresses/second
-
-Tested performance (with -i 10) Using CPU-native optimizations (RUSTFLAGS="-C target-cpu=native"):
-- AMD Ryzen 7 7800X3D (16 threads): ~4,300 seeds/second (~43,000 addresses/second)
-- AMD Ryzen 9 5950x (32 threads): ~7,100 sees/second (~71,000 adresses/second)
-
-Note: Actual performance will vary based on your system specifications and build options.
-Performance may be lower when collecting multiple results as the program
-continues searching until all requested matches are found.
-
-## Security Notes
-
-- All seed phrases are generated securely using system entropy
-- Implements BIP39 for mnemonic generation
-- Follows EIP-3 for Ergo address derivation (m/44'/429'/0'/0/X)
-- No seed phrases are stored or transmitted
-- Each seed can generate multiple addresses using standard derivation paths
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [Ergo Platform](https://ergoplatform.org/)
-- [sigma-rust](https://github.com/ergoplatform/sigma-rust)
-- [ergo-lib](https://github.com/ergoplatform/sigma-rust/tree/develop/ergo-lib)
-- Original [ergo-vanitygen](https://github.com/jellymlg/ergo-vanitygen) by jellymlg
-
-## Disclaimer
-
-This tool is for educational and entertainment purposes. Always verify generated addresses before use. The authors are not responsible for any loss of funds. 
-
-## Difficulty Estimation
-```bash
-# Estimate time to find matches
 ergo-vanitygen -s -p ergo,humble --estimate
+```
 
-# Example output:
+Example Output:
+
+```
 Difficulty Estimation
 ====================
 Pattern: "ergo"
@@ -194,4 +148,28 @@ Estimated attempts needed: 15,625
 Estimated time to find:
   At 10,000 addr/s: 1.6 seconds
   At 20,000 addr/s: 0.8 seconds
-``` 
+```
+
+## 🛡️ Need Help?
+
+* Open an issue on GitHub
+* Check out the FAQ
+
+## 📄 License
+
+This project is licensed under the MIT License – see the LICENSE file for details.
+
+## 🙌 Acknowledgments
+
+Special thanks to:
+
+* [Ergo Platform](https://ergoplatform.org/)
+* [sigma-rust](https://github.com/ergoplatform/sigma-rust)
+* [ergo-lib](https://github.com/ergoplatform/sigma-rust/tree/develop/ergo-lib)
+* Original [ergo-vanitygen](https://github.com/jellymlg/ergo-vanitygen) by jellymlg
+
+## ⚠️ Disclaimer
+
+This tool is for educational and entertainment purposes.  
+Always verify generated addresses before using them.  
+The authors are not responsible for any loss of funds. 
