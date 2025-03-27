@@ -23,8 +23,20 @@ impl PatternMatcher {
         }
     }
 
+    /// Checks if a character is valid in the Base58 alphabet
+    fn is_base58_char(c: char) -> bool {
+        // Base58 alphabet: 123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz
+        // Excluded: 0, O, I, l
+        match c {
+            '0' | 'O' | 'I' | 'l' => false,
+            '1'..='9' | 'A'..='Z' | 'a'..='z' => true,
+            _ => false,
+        }
+    }
+
     /// Validate that at least one pattern exists.
     /// For start matching, ensure that each pattern starts with one of: e, f, g, h, i.
+    /// Also validate that all patterns only contain valid Base58 characters.
     pub fn validate(&self) -> Result<(), String> {
         if self.patterns.is_empty() {
             return Err("At least one pattern must be specified".to_string());
@@ -38,6 +50,18 @@ impl PatternMatcher {
                     if !['e', 'f', 'g', 'h', 'i'].contains(&first_char) {
                         return Err(format!("Invalid start pattern '{}'. Start patterns must begin with e, f, g, h, or i", pat));
                     }
+                }
+            }
+        }
+
+        // Check all patterns for Base58 compliance
+        for pat in &self.patterns {
+            for (i, c) in pat.chars().enumerate() {
+                if !Self::is_base58_char(c) {
+                    return Err(format!(
+                        "Invalid character '{}' in pattern '{}' at position {}. Only Base58 characters are allowed: 123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz", 
+                        c, pat, i + 1
+                    ));
                 }
             }
         }

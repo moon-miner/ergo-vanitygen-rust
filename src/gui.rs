@@ -180,6 +180,18 @@ impl App for VanityGenApp {
                         .hint_text("e.g. ABC, 123")
                 );
                 ui.label("Comma-separated for multiple patterns");
+                
+                // Add Base58 info with subtle coloring
+                ui.label(
+                    RichText::new("Note: Only Base58 characters are valid (no 0, O, I, l)")
+                        .color(Color32::from_rgb(200, 200, 200))
+                        .size(12.0)
+                ).on_hover_ui(|ui| {
+                    ui.label("Valid characters: 123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
+                    ui.label("Excluded characters: 0, O, I, l");
+                    ui.label("These restrictions exist in the Ergo address format to prevent confusion between similar-looking characters.");
+                });
+                
                 ui.add_space(5.0);
 
                 ui.label("Match type:");
@@ -282,13 +294,25 @@ impl App for VanityGenApp {
                 {
                     for pattern in &patterns {
                         let estimate = estimator::estimate_pattern(pattern, self.start_match);
-                        self.add_log(&format!(
-                            "Pattern: \"{}\", Est. attempts: {:.0}, Time: {} to {}",
-                            pattern,
-                            estimate.attempts_needed,
-                            estimator::format_time(estimate.time_at_min),
-                            estimator::format_time(estimate.time_at_max)
-                        ));
+                        
+                        if estimate.has_invalid_chars {
+                            self.add_log(&format!(
+                                "Pattern: \"{}\" contains invalid Base58 characters: {}",
+                                pattern,
+                                estimate.invalid_chars.iter().collect::<String>()
+                            ));
+                            self.add_log("  This pattern is IMPOSSIBLE to find in a valid Ergo address");
+                            self.add_log("  Valid characters: 123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
+                            self.current_tab = Tab::Log; // Switch to log tab to make error visible
+                        } else {
+                            self.add_log(&format!(
+                                "Pattern: \"{}\", Est. attempts: {:.0}, Time: {} to {}",
+                                pattern,
+                                estimate.attempts_needed,
+                                estimator::format_time(estimate.time_at_min),
+                                estimator::format_time(estimate.time_at_max)
+                            ));
+                        }
                     }
                 }
                 ui.add_space(10.0);
@@ -402,16 +426,23 @@ impl VanityGenApp {
         if let Err(err) = matcher.validate() {
             self.add_log(&format!("Error: {}", err));
             
-            // Show error in a more prominent way if validation fails (especially for start patterns)
-            if self.start_match && patterns.iter().any(|p| {
+            // Show error in a more prominent way if validation fails
+            self.current_tab = Tab::Log; // Switch to log tab to make error visible
+            
+            // Add specific messages based on error type
+            if err.contains("Base58") {
+                self.add_log("Invalid characters detected. Ergo addresses only use Base58 characters:");
+                self.add_log("  Valid characters: 123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
+                self.add_log("  Excluded characters: 0, O, I, l (to avoid confusion)");
+                self.add_log("Your pattern contains characters that can never appear in an Ergo address.");
+            } else if self.start_match && patterns.iter().any(|p| {
                 let first_char = p.chars().next().unwrap_or('_');
                 !['e', 'f', 'g', 'h', 'i'].contains(&first_char)
             }) {
-                self.current_tab = Tab::Log; // Switch to log tab to make error visible
-                // Add a more user-friendly message
                 self.add_log("Invalid start pattern: Ergo addresses can only start with e, f, g, h, or i");
                 self.add_log("Try 'Anywhere' or 'End' matching instead for this pattern");
             }
+            
             return;
         }
         let word_count = if self.all_word_lengths {
